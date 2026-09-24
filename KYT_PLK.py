@@ -7,7 +7,7 @@ st.write(
     "กรอกข้อมูลประจำวัน สามารถกดเพิ่มหรือลบแต่ละข้อความได้จากปุ่มด้านหลังข้อความ"
 )
 
-# 1. กำหนดค่าเริ่มต้นข้อมูลใน session_state (ใช้ List เก็บข้อความโดยตรง)
+# 1. กำหนดค่าเริ่มต้นใน session_state (ข้อมูลหลักยังคงมีค่าเริ่มต้นตามเดิม)
 if "main_works" not in st.session_state:
   st.session_state.main_works = [
       "รับสินค้า 5 เที่ยว / จ่ายสินค้า 15 เที่ยว",
@@ -40,18 +40,18 @@ if "problem_items" not in st.session_state:
 if "file_ready" not in st.session_state:
   st.session_state.file_ready = False
 
-# --- ข้อมูลทั่วไป ---
+# --- ข้อมูลทั่วไป (แก้ค่าเริ่มต้นให้เป็นช่องว่าง) ---
 st.subheader("📌 ข้อมูลทั่วไป")
 col1, col2 = st.columns(2)
 with col1:
-  branch = st.text_input("สาขา", "พิษณุโลก")
-  reporter = st.text_input("ผู้รายงาน", "วิไลวรรณ ศิริแสน")
+  branch = st.text_input("สาขา", "")
+  reporter = st.text_input("ผู้รายงาน", "")
 with col2:
   selected_date = st.date_input("วันที่", datetime.date.today())
   date_str = selected_date.strftime("%d/%m/%Y")
-  time_str = st.text_input("ประชุมทีมเสร็จเวลา", "08:10 น.")
+  time_str = st.text_input("ประชุมทีมเสร็จเวลา", "")
 
-participants = st.text_input("ผู้เข้าร่วม", "เช็กเกอร์และพนักงานรายวัน")
+participants = st.text_input("ผู้เข้าร่วม", "")
 
 # --- 1. งานหลักวันนี้ ---
 st.subheader("1. งานหลักวันนี้")
@@ -64,7 +64,7 @@ for i, item in enumerate(st.session_state.main_works):
     )
     temp_main_works.append(val)
   with cols[1]:
-    st.write("")  # จัดระยะให้ปุ่มตรงกับช่องกรอก
+    st.write("")
     if st.button("🗑️ ลบ", key=f"del_main_{i}"):
       st.session_state.main_works.pop(i)
       st.rerun()
