@@ -4,60 +4,18 @@ import streamlit as st
 
 st.title("📋 ระบบบันทึก Morning KYT & Warehouse Readiness")
 st.write(
-    "กรอกข้อมูลประจำวัน สามารถกดปุ่มเพิ่มหัวข้อย่อย ประเด็น หรือปัญหาได้ตามต้องการ"
+    "กรอกข้อมูลประจำวัน สามารถกดเพิ่มหรือลบแต่ละข้อความได้จากปุ่มด้านหลังข้อความ"
 )
 
-# กำหนดค่าเริ่มต้นใน session_state
-if "main_count" not in st.session_state:
-  st.session_state.main_count = 2
-if "ready_count" not in st.session_state:
-  st.session_state.ready_count = 4
-if "kyt_count" not in st.session_state:
-  st.session_state.kyt_count = 3
-if "problem_count" not in st.session_state:
-  st.session_state.problem_count = 1  # เริ่มต้นที่ 1 ข้อ (ไม่มี)
-if "file_ready" not in st.session_state:
-  st.session_state.file_ready = False
-
-with st.form("kyt_form"):
-  st.subheader("📌 ข้อมูลทั่วไป")
-  col1, col2 = st.columns(2)
-  with col1:
-    branch = st.text_input("สาขา", "พิษณุโลก")
-    reporter = st.text_input("ผู้รายงาน", "วิไลวรรณ ศิริแสน")
-  with col2:
-    # ปรับใช้ปฏิทินเลือกวันที่จริง
-    selected_date = st.date_input("วันที่", datetime.date.today())
-    date_str = selected_date.strftime("%d/%m/%Y")
-
-    time_str = st.text_input("ประชุมทีมเสร็จเวลา", "08:10 น.")
-
-  participants = st.text_input("ผู้เข้าร่วม", "เช็กเกอร์และพนักงานรายวัน")
-
-  # --- 1. งานหลักวันนี้ ---
-  st.subheader("1. งานหลักวันนี้")
-  main_works = []
-  default_mains = [
+# 1. กำหนดค่าเริ่มต้นข้อมูลใน session_state (ใช้ List เก็บข้อความโดยตรง)
+if "main_works" not in st.session_state:
+  st.session_state.main_works = [
       "รับสินค้า 5 เที่ยว / จ่ายสินค้า 15 เที่ยว",
       "เตรียมสินค้าจัดส่งก่อน 10:00 น. 8 เที่ยว",
   ]
-  for i in range(st.session_state.main_count):
-    default_val = (
-        default_mains[i] if i < len(default_mains) else f"งานหลักข้อที่ {i+1}"
-    )
-    val = st.text_input(f"งานหลักข้อที่ {i+1}", default_val)
-    main_works.append(val)
 
-  col_btn1, _ = st.columns([1, 4])
-  with col_btn1:
-    if st.form_submit_button("➕ เพิ่มงานหลัก"):
-      st.session_state.main_count += 1
-      st.rerun()
-
-  # --- 2. ความพร้อมก่อนเริ่มงาน ---
-  st.subheader("2. ความพร้อมก่อนเริ่มงาน")
-  ready_items = []
-  default_readies = [
+if "ready_items" not in st.session_state:
+  st.session_state.ready_items = [
       "พนักงานมา 12 คน ครบตามแผน",
       (
           "พนักงานรายวันมา 13 จากแผน 14 คน จัดคนงานแยกตามจุดลงสินค้าแต่ละประเภทแล้ว"
@@ -65,25 +23,9 @@ with st.form("kyt_form"):
       "รถโฟล์คลิฟท์ 1 คัน พร้อมใช้งาน",
       "พื้นที่รับ–จ่ายสินค้า พร้อมใช้งาน",
   ]
-  for i in range(st.session_state.ready_count):
-    default_val = (
-        default_readies[i]
-        if i < len(default_readies)
-        else f"ความพร้อมข้อที่ {i+1}"
-    )
-    val = st.text_input(f"ความพร้อมข้อที่ {i+1}", default_val)
-    ready_items.append(val)
 
-  col_btn2, _ = st.columns([1, 4])
-  with col_btn2:
-    if st.form_submit_button("➕ เพิ่มความพร้อม"):
-      st.session_state.ready_count += 1
-      st.rerun()
-
-  # --- 3. ประเด็น KYT ที่คุยกับทีมวันนี้ ---
-  st.subheader("3. ประเด็น KYT ที่คุยกับทีมวันนี้")
-  kyt_items = []
-  default_kyts = [
+if "kyt_items" not in st.session_state:
+  st.session_state.kyt_items = [
       "เน้นย้ำการเช็กงานเตรียมรอกระจาย",
       "เน้นย้ำดูแลการเข้า–ออกบริเวณจุดโหลด",
       (
@@ -91,103 +33,171 @@ with st.form("kyt_form"):
           " ค้นหาของได้รวดเร็ว"
       ),
   ]
-  for i in range(st.session_state.kyt_count):
-    default_val = (
-        default_kyts[i] if i < len(default_kyts) else f"ประเด็น KYT ข้อที่ {i+1}"
+
+if "problem_items" not in st.session_state:
+  st.session_state.problem_items = ["ไม่มี"]
+
+if "file_ready" not in st.session_state:
+  st.session_state.file_ready = False
+
+# --- ข้อมูลทั่วไป ---
+st.subheader("📌 ข้อมูลทั่วไป")
+col1, col2 = st.columns(2)
+with col1:
+  branch = st.text_input("สาขา", "พิษณุโลก")
+  reporter = st.text_input("ผู้รายงาน", "วิไลวรรณ ศิริแสน")
+with col2:
+  selected_date = st.date_input("วันที่", datetime.date.today())
+  date_str = selected_date.strftime("%d/%m/%Y")
+  time_str = st.text_input("ประชุมทีมเสร็จเวลา", "08:10 น.")
+
+participants = st.text_input("ผู้เข้าร่วม", "เช็กเกอร์และพนักงานรายวัน")
+
+# --- 1. งานหลักวันนี้ ---
+st.subheader("1. งานหลักวันนี้")
+temp_main_works = []
+for i, item in enumerate(st.session_state.main_works):
+  cols = st.columns([5, 1])
+  with cols[0]:
+    val = st.text_input(
+        f"งานหลักข้อที่ {i+1}", value=item, key=f"main_input_{i}"
     )
-    val = st.text_input(f"ประเด็น KYT ข้อที่ {i+1}", default_val)
-    kyt_items.append(val)
-
-  col_btn3, _ = st.columns([1, 4])
-  with col_btn3:
-    if st.form_submit_button("➕ เพิ่มประเด็น KYT"):
-      st.session_state.kyt_count += 1
+    temp_main_works.append(val)
+  with cols[1]:
+    st.write("")  # จัดระยะให้ปุ่มตรงกับช่องกรอก
+    if st.button("🗑️ ลบ", key=f"del_main_{i}"):
+      st.session_state.main_works.pop(i)
       st.rerun()
+st.session_state.main_works = temp_main_works
 
-  # --- 4. ปัญหาค้าง/เรื่องที่ต้องประสาน ---
-  st.subheader("4. ปัญหาค้าง/เรื่องที่ต้องประสาน")
-  problem_items = []
-  default_problems = ["ไม่มี"]
-  for i in range(st.session_state.problem_count):
-    default_val = (
-        default_problems[i]
-        if i < len(default_problems)
-        else f"ปัญหาข้อที่ {i+1}"
+if st.button("➕ เพิ่มงานหลัก"):
+  st.session_state.main_works.append("")
+  st.rerun()
+
+# --- 2. ความพร้อมก่อนเริ่มงาน ---
+st.subheader("2. ความพร้อมก่อนเริ่มงาน")
+temp_ready_items = []
+for i, item in enumerate(st.session_state.ready_items):
+  cols = st.columns([5, 1])
+  with cols[0]:
+    val = st.text_input(
+        f"ความพร้อมข้อที่ {i+1}", value=item, key=f"ready_input_{i}"
     )
-    val = st.text_input(f"ปัญหาข้อที่ {i+1}", default_val)
-    problem_items.append(val)
-
-  col_btn4, _ = st.columns([1, 4])
-  with col_btn4:
-    if st.form_submit_button("➕ เพิ่มปัญหา"):
-      st.session_state.problem_count += 1
+    temp_ready_items.append(val)
+  with cols[1]:
+    st.write("")
+    if st.button("🗑️ ลบ", key=f"del_ready_{i}"):
+      st.session_state.ready_items.pop(i)
       st.rerun()
+st.session_state.ready_items = temp_ready_items
 
-  # --- 5. สถานะสาขา ---
-  st.subheader("5. สถานะสาขา")
-  status = st.selectbox(
-      "สถานะ",
-      ["ดำเนินงานได้แต่มีข้อจำกัด", "ดำเนินงานได้ปกติ", "มีปัญหาติดขัด"],
-  )
-  status_detail = st.text_area(
-      "รายละเอียดสถานะ",
-      (
-          "งานเช้าดำเนินได้ตามแผนที่ปรับแล้ว"
-          " ยังไม่กระทบเวลารับ–จ่ายสินค้า"
-      ),
-  )
+if st.button("➕ เพิ่มความพร้อม"):
+  st.session_state.ready_items.append("")
+  st.rerun()
 
-  # ปุ่มกดบันทึกหลัก
-  submitted = st.form_submit_button("💾 บันทึกข้อมูลเป็น Excel ทั้งหมด")
+# --- 3. ประเด็น KYT ที่คุยกับทีมวันนี้ ---
+st.subheader("3. ประเด็น KYT ที่คุยกับทีมวันนี้")
+temp_kyt_items = []
+for i, item in enumerate(st.session_state.kyt_items):
+  cols = st.columns([5, 1])
+  with cols[0]:
+    val = st.text_input(
+        f"ประเด็น KYT ข้อที่ {i+1}", value=item, key=f"kyt_input_{i}"
+    )
+    temp_kyt_items.append(val)
+  with cols[1]:
+    st.write("")
+    if st.button("🗑️ ลบ", key=f"del_kyt_{i}"):
+      st.session_state.kyt_items.pop(i)
+      st.rerun()
+st.session_state.kyt_items = temp_kyt_items
 
-  if submitted:
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Morning KYT"
+if st.button("➕ เพิ่มประเด็น KYT"):
+  st.session_state.kyt_items.append("")
+  st.rerun()
 
-    data = [
-        ["Morning KYT & Warehouse Readiness", ""],
-        ["สาขา:", branch],
-        ["วันที่:", date_str],
-        ["ผู้รายงาน:", reporter],
-        ["ประชุมทีมเสร็จเวลา:", time_str],
-        ["ผู้เข้าร่วม:", participants],
-        ["---", "---"],
-        ["1. งานหลักวันนี้", ""],
-    ]
+# --- 4. ปัญหาค้าง/เรื่องที่ต้องประสาน ---
+st.subheader("4. ปัญหาค้าง/เรื่องที่ต้องประสาน")
+temp_problem_items = []
+for i, item in enumerate(st.session_state.problem_items):
+  cols = st.columns([5, 1])
+  with cols[0]:
+    val = st.text_input(
+        f"ปัญหาข้อที่ {i+1}", value=item, key=f"problem_input_{i}"
+    )
+    temp_problem_items.append(val)
+  with cols[1]:
+    st.write("")
+    if st.button("🗑️ ลบ", key=f"del_problem_{i}"):
+      st.session_state.problem_items.pop(i)
+      st.rerun()
+st.session_state.problem_items = temp_problem_items
 
-    for item in main_works:
-      data.append(["-", item])
+if st.button("➕ เพิ่มปัญหา"):
+  st.session_state.problem_items.append("")
+  st.rerun()
 
-    data.append(["---", "---"])
-    data.append(["2. ความพร้อมก่อนเริ่มงาน", ""])
-    for item in ready_items:
-      data.append(["-", item])
+# --- 5. สถานะสาขา ---
+st.subheader("5. สถานะสาขา")
+status = st.selectbox(
+    "สถานะ", ["ดำเนินงานได้แต่มีข้อจำกัด", "ดำเนินงานได้ปกติ", "มีปัญหาติดขัด"]
+)
+status_detail = st.text_area(
+    "รายละเอียดสถานะ",
+    "งานเช้าดำเนินได้ตามแผนที่ปรับแล้ว ยังไม่กระทบเวลารับ–จ่ายสินค้า",
+)
 
-    data.append(["---", "---"])
-    data.append(["3. ประเด็น KYT ที่คุยกับทีมวันนี้", ""])
-    for item in kyt_items:
-      data.append(["-", item])
+st.markdown("---")
 
-    data.append(["---", "---"])
-    data.append(["4. ปัญหาค้าง/เรื่องที่ต้องประสาน", ""])
-    for item in problem_items:
-      data.append(["-", item])
+# ปุ่มกดบันทึกหลัก
+if st.button("💾 บันทึกข้อมูลเป็น Excel ทั้งหมด", type="primary"):
+  wb = Workbook()
+  ws = wb.active
+  ws.title = "Morning KYT"
 
-    data.append(["---", "---"])
-    data.append(["5. สถานะสาขา", status])
-    data.append(["รายละเอียดสถานะ:", status_detail])
+  data = [
+      ["Morning KYT & Warehouse Readiness", ""],
+      ["สาขา:", branch],
+      ["วันที่:", date_str],
+      ["ผู้รายงาน:", reporter],
+      ["ประชุมทีมเสร็จเวลา:", time_str],
+      ["ผู้เข้าร่วม:", participants],
+      ["---", "---"],
+      ["1. งานหลักวันนี้", ""],
+  ]
 
-    for row_idx, row_data in enumerate(data, start=1):
-      ws.cell(row=row_idx, column=1, value=row_data[0])
-      ws.cell(row=row_idx, column=2, value=row_data[1])
+  for item in st.session_state.main_works:
+    data.append(["-", item])
 
-    file_name = "Morning_KYT_Report.xlsx"
-    wb.save(file_name)
-    st.session_state.file_ready = True
-    st.success(f"บันทึกข้อมูลสำเร็จ! ไฟล์ถูกเซฟชื่อว่า: {file_name}")
+  data.append(["---", "---"])
+  data.append(["2. ความพร้อมก่อนเริ่มงาน", ""])
+  for item in st.session_state.ready_items:
+    data.append(["-", item])
 
-# ปุ่มดาวน์โหลดไฟล์ (อยู่นอก Form)
+  data.append(["---", "---"])
+  data.append(["3. ประเด็น KYT ที่คุยกับทีมวันนี้", ""])
+  for item in st.session_state.kyt_items:
+    data.append(["-", item])
+
+  data.append(["---", "---"])
+  data.append(["4. ปัญหาค้าง/เรื่องที่ต้องประสาน", ""])
+  for item in st.session_state.problem_items:
+    data.append(["-", item])
+
+  data.append(["---", "---"])
+  data.append(["5. สถานะสาขา", status])
+  data.append(["รายละเอียดสถานะ:", status_detail])
+
+  for row_idx, row_data in enumerate(data, start=1):
+    ws.cell(row=row_idx, column=1, value=row_data[0])
+    ws.cell(row=row_idx, column=2, value=row_data[1])
+
+  file_name = "Morning_KYT_Report.xlsx"
+  wb.save(file_name)
+  st.session_state.file_ready = True
+  st.success(f"บันทึกข้อมูลสำเร็จ! ไฟล์ถูกเซฟชื่อว่า: {file_name}")
+
+# ปุ่มดาวน์โหลดไฟล์
 if st.session_state.file_ready:
   file_name = "Morning_KYT_Report.xlsx"
   try:
